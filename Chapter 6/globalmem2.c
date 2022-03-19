@@ -8,7 +8,7 @@
 #include <linux/cdev.h>
 #include <asm/io.h>
 //#include <asm/system.h>
-#include <linux/uaccess.h> 
+#include <linux/uaccess.h>
 //#include <asm/uaccess.h>
 #include <linux/slab.h>   /* kmalloc */
 
@@ -76,13 +76,10 @@ static ssize_t globalmem_read(struct file *filp, char __user *buf,size_t size,lo
 		count = GLOBALMEM_SIZE - p;
 
 	/*内核空间→用户空间*/
-	if (copy_to_user(buf, (void*)(dev->mem + p), count))
-	{
+	if (copy_to_user(buf, (void*)(dev->mem + p), count)) {
 		ret = - EFAULT;
-	}
-	else
-	{
-		*ppos += count;	
+	} else {
+		*ppos += count;
 		ret = count;
 		printk(KERN_INFO "read %d bytes(s) from %ld\n", count, p);
 	}
@@ -104,11 +101,10 @@ static ssize_t globalmem_write(struct file *filp, const char __user
 	if (count > GLOBALMEM_SIZE - p) //要写的字节数太多
 		count = GLOBALMEM_SIZE - p;
 
- 	/*用户空间→内核空间*/
-	if (copy_from_user(dev->mem + p, buf, count))
+	/*用户空间→内核空间*/
+	if (copy_from_user(dev->mem + p, buf, count)) {
 		ret = - EFAULT;
-	else
-	{
+	} else {
 		*ppos += count;
 		ret = count;
 		printk(KERN_INFO "written %d bytes(s) from %ld\n", count, p);
@@ -124,38 +120,38 @@ static loff_t globalmem_llseek(struct file *filp, loff_t offset,int orig)
 	switch (orig)
 	{
 		case 0:
-        /*相对文件开始位置偏移*/
-        if (offset < 0)
-        {
-            ret = - EINVAL;
-            break;
-        }
-        if ((unsigned int)offset > GLOBALMEM_SIZE)
-        {
-            ret = - EINVAL;
-            break;
-        }
-        filp->f_pos = (unsigned int)offset;
-        ret = filp->f_pos;
-        break;
+				/*相对文件开始位置偏移*/
+				if (offset < 0)
+				{
+						ret = - EINVAL;
+						break;
+				}
+				if ((unsigned int)offset > GLOBALMEM_SIZE)
+				{
+						ret = - EINVAL;
+						break;
+				}
+				filp->f_pos = (unsigned int)offset;
+				ret = filp->f_pos;
+				break;
 		case 1:		/*相对文件当前位置偏移*/
-        if ((filp->f_pos + offset) > GLOBALMEM_SIZE)
-        {
-            ret = - EINVAL;
-            break;
-        }
-        if ((filp->f_pos + offset) < 0)
-        {
-            ret = - EINVAL;
-            break;
-        }
-        filp->f_pos += offset;
-        ret = filp->f_pos;
-        ret = - EINVAL;
-        break;
+				if ((filp->f_pos + offset) > GLOBALMEM_SIZE)
+				{
+						ret = - EINVAL;
+						break;
+				}
+				if ((filp->f_pos + offset) < 0)
+				{
+						ret = - EINVAL;
+						break;
+				}
+				filp->f_pos += offset;
+				ret = filp->f_pos;
+				ret = - EINVAL;
+				break;
 		default:
-        ret= - EINVAL;
-        break;
+				ret= - EINVAL;
+				break;
 	}
 	return ret;
 }
@@ -167,7 +163,7 @@ static const struct file_operations globalmem_fops =
 	.llseek = globalmem_llseek,
 	.read = globalmem_read,
 	.write = globalmem_write,
-	.compat_ioctl = globalmem_ioctl, 	/* ioctl */
+	.compat_ioctl = globalmem_ioctl,	/* ioctl */
 	.open = globalmem_open,
 	.release = globalmem_release,
 };
@@ -176,7 +172,7 @@ static const struct file_operations globalmem_fops =
 static void globalmem_setup_cdev(struct globalmem_dev *dev, int index)
 {
 	int err, devno = MKDEV(globalmem_major, index);
-    /*字符设备注册*/
+	/*字符设备注册*/
 	cdev_init(&dev->cdev, &globalmem_fops);
 	dev->cdev.owner = THIS_MODULE;
 	dev->cdev.ops = &globalmem_fops;
@@ -184,22 +180,20 @@ static void globalmem_setup_cdev(struct globalmem_dev *dev, int index)
 	if (err)
 		printk(KERN_NOTICE "Error %d adding LED%d", err, index);
 
-    /*创建设备文件节点*/
-    globalmem_cls = class_create(THIS_MODULE, "class");
-	if(IS_ERR(globalmem_cls))
-	{
+	/*创建设备文件节点*/
+	globalmem_cls = class_create(THIS_MODULE, "class");
+	if (IS_ERR(globalmem_cls)) {
 		unregister_chrdev(globalmem_major,"globalmem");
-        printk(KERN_NOTICE "class create error\n");
+		printk(KERN_NOTICE "class create error\n");
 		return -EBUSY;
 	}
 
-    /*生成 mknod /dev/globalmem */
+	/*生成 mknod /dev/globalmem */
 	globalmem_device = device_create(globalmem_cls,NULL,devno,NULL,"globalmem");
-	if(IS_ERR(globalmem_device))
-	{
+	if (IS_ERR(globalmem_device)) {
 		class_destroy(globalmem_cls);
 		unregister_chrdev(globalmem_major,"globalmem");
-        printk(KERN_NOTICE "device_create error\n");
+		printk(KERN_NOTICE "device_create error\n");
 		return -EBUSY;
 	}
 }
@@ -209,19 +203,16 @@ static void globalmem_setup_cdev(struct globalmem_dev *dev, int index)
 int globalmem_init(void)
 {
 	int result;
-    /*MKDEV是将主设备号和次设备号转换成dev_t类型*/
+	/*MKDEV是将主设备号和次设备号转换成dev_t类型*/
 	dev_t devno=MKDEV(globalmem_major,0);
 
 	/* 申请字符设备驱动区域*/
-	if ( globalmem_major)
-	{
+	if ( globalmem_major) {
 		result=register_chrdev_region(devno,1,"globalmem");
-	}
-	else
-	/* 动态获得主设备号 */
-	{
+	} else {
+		/* 动态获得主设备号 */
 		result=alloc_chrdev_region(&devno,0,1,"globalmem");
-        /*获取主设备号*/
+		/*获取主设备号*/
 		globalmem_major=MAJOR(devno);
 	}
 	if (result < 0)
@@ -229,22 +220,20 @@ int globalmem_init(void)
 
 	/* 动态申请设备结构体的内存*/
 	globalmem_devp=kmalloc(sizeof(struct globalmem_dev),GFP_KERNEL);
-
-	if(!globalmem_devp) /*申请失败*/
-	{
+	if (!globalmem_devp) {/*申请失败*/
 		result= - ENOMEM;
 		goto fail_malloc;
 	}
 
 	memset(globalmem_devp, 0, sizeof(struct globalmem_dev));
 	/*设置字符驱动结构体*/
-    globalmem_setup_cdev(globalmem_devp, 0);
-    printk(KERN_NOTICE "globalmem_init\n");
+	globalmem_setup_cdev(globalmem_devp, 0);
+	printk(KERN_NOTICE "globalmem_init\n");
 	return 0;
 
 fail_malloc:
-    unregister_chrdev_region(devno, 1);
-    printk(KERN_NOTICE "globalmem_init fail\n");
+	unregister_chrdev_region(devno, 1);
+	printk(KERN_NOTICE "globalmem_init fail\n");
 	return result;
 }
 
@@ -254,9 +243,9 @@ void globalmem_exit(void)
 	cdev_del(&globalmem_devp->cdev);   /*删除 cdev 结构*/
 	kfree(globalmem_devp); /*释放设备结构体内存*/
 	unregister_chrdev_region(MKDEV(globalmem_major,0),1); /*释放设备号*/
-    if(globalmem_cls != NULL)
-        class_destroy(globalmem_cls);
-    printk(KERN_NOTICE "globalmem_exit\n");
+	if(globalmem_cls != NULL)
+		class_destroy(globalmem_cls);
+	printk(KERN_NOTICE "globalmem_exit\n");
 }
 
 /* Module info */

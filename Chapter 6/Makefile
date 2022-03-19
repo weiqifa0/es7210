@@ -1,6 +1,6 @@
 #   Makefile for modules
 #   #
-mod_SRCS=globalmem.c
+mod_SRCS=globalmem2.c
 mod_OBJS=$(mod_SRCS:.c=.o)
 ifneq ($(KERNELRELEASE),)
     obj-m:=$(mod_OBJS)
